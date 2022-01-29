@@ -160,10 +160,7 @@ function readData(data) {
     case 'msg':
     default: 
       //Assume a chat message
-      const commaIndex = data.indexOf(",");
-      var otherUsername = data.slice(0, commaIndex);
-      var message = data.slice(commaIndex + 1);
-      sendLocalChat("<span class=\"selfMsg\">" + otherUsername + ": </span>" + message);
+      sendLocalChat("<span class=\"selfMsg\">" + data.username + ": </span>" + data.msg);
       break;
   }
 }
