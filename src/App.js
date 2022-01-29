@@ -153,7 +153,7 @@ function getTimeStr() {
  *
  */
 function enterChat() {
-  const msg = document.getElementById('game-id').value;
+  const msg = document.getElementById('chat').value;
   sendOnlineChat(msg);
 }
 
