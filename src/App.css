@@ -36,3 +36,26 @@
     transform: rotate(360deg);
   }
 }
+
+.chatSection {
+  vertical-align: bottom;
+}
+
+.chatBox {
+  vertical-align: top;
+  float: left;
+}
+
+.chatLog {
+  vertical-align: bottom;
+  float: left;
+  text-align: left;
+}
+
+.selfMsg {
+  color: red;
+}
+
+.msgTime {
+  color: blue;
+}

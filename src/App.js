@@ -3,7 +3,6 @@
  *
  * Main React page, along with basic peer-to-peer connectivity.
  */
-import logo from './logo.svg';
 import './App.css';
 import Peer from 'peerjs';
 
@@ -41,6 +40,7 @@ function join() {
   const gameID = document.getElementById('game-id').value;
   username = document.getElementById('username').value;
 
+  // Check for non-null inputs
   if (!username) {
     alert("Please enter in a display name!");
     return;
@@ -56,7 +56,7 @@ function join() {
   // Runs function after successful connection to peer
   conn.on('open', function () {
     console.log("Connected to: " + conn.peer);
-    conn.send("+" + username);
+    sendData('connection');
     
     // Runs when data is received
     conn.on('data', (data) => readData(data));
@@ -75,6 +75,7 @@ function host() {
   gameID = document.getElementById('game-id').value;
   username = document.getElementById('username').value;
 
+  // Check for non-null inputs
   if (!username) {
     alert("Please enter in a display name!");
     return;
@@ -92,19 +93,49 @@ function host() {
   // Runs when the peer has been created
   peer.on('open', function (id) {
     console.log('ID: ' + peer.id);
-    sendLocalChat("Room created with ID '" + gameID + "'.");
+    sendLocalChat("Room created with ID '<b>" + gameID + "</b>'.");
   });
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
     conn = c;
     console.log("Connected to: " + conn.peer);
-    conn.send("+" + username);
+    //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
     conn.on('data', (data) => readData(data));
   });
 };
+
+/*
+ * sendData()
+ * 
+ * Prepares and sends the given data to all
+ * users in the connection.
+ */
+function sendData(type, txt) {
+  if (!conn) {
+    console.log("Failed to send data to non-existent connection.");
+    return;
+  }
+
+  // Create the JSON object to send
+  var data = {
+    username: username,
+    type: type
+  }
+
+  // Modify it depending on what kind of data we want to send
+  switch(type) {
+    case 'connection':
+      break;
+    case 'msg':
+    default:
+      data.msg = txt;
+      break;
+  }
+  conn.send(data);
+}
 
 /*
  * readData()
@@ -116,16 +147,17 @@ function readData(data) {
   console.log("Data recieved: ", data);
 
   // Check what type of data was sent
-  const char = data.charAt(0);
-  switch (char) {
-    case '+':
+  const type = data.type;
+  switch (type) {
+    case 'connection':
       // Reply if this is the host
       if (gameID && gameID == peer.id) {
-        conn.send("+" + username);
+        sendData('connection');
       }
       
-      sendLocalChat("Connected to: " + data.slice(1));
+      sendLocalChat("Connected to: " + data.username);
       break;
+    case 'msg':
     default: 
       //Assume a chat message
       const commaIndex = data.indexOf(",");
@@ -186,7 +218,7 @@ function sendOnlineChat(msg) {
     return;
   }
 
-  conn.send(username + "," + msg);
+  sendData('msg', msg);
   console.log("Sent message: " + username + "," + msg);
   addChatBox("<span class=\"selfMsg\">" + username + ": </span>" + msg);
 }
@@ -213,7 +245,7 @@ function addChatBox(msg) {
   }
 
   const time = getTimeStr();
-  message.innerHTML = "<br><span class=\"msg-time\">" + time + "</span>  -  " + msg + message.innerHTML;
+  message.innerHTML = "<br><span class=\"msgTime\">" + time + "</span>  -  " + msg + message.innerHTML;
 }
 
 // Main React app render
@@ -234,14 +266,24 @@ function App() {
         <button onClick={join}>Join</button>
         <button onClick={host}>Create Game</button>
       </span>
-      <h1>Chat</h1>
-      <span>
-        <input type="text" id="chat"></input>
-        <button onClick={enterChat}>Send</button>
-      </span>
-      <span>
-        <div id="message"><span></span></div>
-      </span>
+      <table className="chatSection">
+        <tbody>
+          <tr>
+            <td><h1>Chat</h1></td>
+          </tr>
+          <tr>
+            <td>
+              <input type="text" id="chat"></input>
+              <button onClick={enterChat}>Send</button>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div className="chatBox" id="message"></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }
