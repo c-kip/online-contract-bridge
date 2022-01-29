@@ -38,18 +38,44 @@
 }
 
 .chatSection {
-  vertical-align: bottom;
+  bottom: 0%;
+  position: fixed;
+  vertical-align: top;
+  float: left;
+  height: 30%;
+  width: 98%;
+  margin-bottom: 1%;
+  margin-left: 1%;
+  margin-right: 1%;
+  border: 2px solid black;
+}
+
+.chatHeader {
+  margin: 0%;
+  padding: 0%;
+}
+
+.noPad {
+  margin: 0%;
+  padding: 0%;
 }
 
 .chatBox {
   vertical-align: top;
   float: left;
+  margin-left: 1%;
 }
 
 .chatLog {
   vertical-align: bottom;
   float: left;
   text-align: left;
+  height: 95%;
+  width: 98%;
+  margin-bottom: 1%;
+  margin-left: 1%;
+  margin-right: 1%;
+  border: 2px solid blue;
 }
 
 .selfMsg {

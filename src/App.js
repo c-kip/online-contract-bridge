@@ -269,17 +269,17 @@ function App() {
       <table className="chatSection">
         <tbody>
           <tr>
-            <td><h1>Chat</h1></td>
+            <td className="noPad"><h1 className="chatHeader">Chat</h1></td>
           </tr>
           <tr>
-            <td>
+            <td className="chatBox">
               <input type="text" id="chat"></input>
               <button onClick={enterChat}>Send</button>
             </td>
           </tr>
           <tr>
-            <td>
-              <div className="chatBox" id="message"></div>
+            <td className="chatLog">
+              <div id="message"></div>
             </td>
           </tr>
         </tbody>
