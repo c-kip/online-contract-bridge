@@ -54,9 +54,8 @@ function join() {
 
   // Runs function after successful connection to peer
   conn.on('open', function () {
-    const msg = "Connected to: " + conn.peer;
-    console.log(msg);
-    sendLocalChat(msg);
+    console.log("Connected to: " + conn.peer);
+    conn.send("+" + username);
     
     // Runs when data is received
     conn.on('data', (data) => readData(data));
@@ -98,9 +97,8 @@ function host() {
   // Runs when a connection has been established
   peer.on('connection', function (c) {
     conn = c;
-    const msg = "Connected to: " + conn.peer;
-    console.log(msg);
-    sendLocalChat(msg);
+    console.log("Connected to: " + conn.peer);
+    conn.send("+" + username);
 
     // Runs when data is received
     conn.on('data', (data) => readData(data));
@@ -115,10 +113,21 @@ function host() {
  */
 function readData(data) {
   console.log("Data recieved: ", data);
-  const commaIndex = data.indexOf(",");
-  var otherUsername = data.slice(0, commaIndex);
-  var message = data.slice(commaIndex + 1);
-  sendLocalChat("<span class=\"selfMsg\">" + otherUsername + ": </span>" + message);
+
+  // Check what type of data was sent
+  const char = data.charAt(0);
+  switch (char) {
+    case '+':
+      sendLocalChat("Connected to: " + data.slice(1));
+      break;
+    default: 
+      //Assume a chat message
+      const commaIndex = data.indexOf(",");
+      var otherUsername = data.slice(0, commaIndex);
+      var message = data.slice(commaIndex + 1);
+      sendLocalChat("<span class=\"selfMsg\">" + otherUsername + ": </span>" + message);
+      break;
+  }
 }
 
 /*
