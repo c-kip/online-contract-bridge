@@ -10,6 +10,8 @@ import Peer from 'peerjs';
 // Global variables
 var peer = null;
 var conn = null;
+var message = null;
+var username = null;
 
 /*
  * create()
@@ -36,13 +38,25 @@ function create() {
  */
 function join() {
   const gameID = document.getElementById('game-id').value;
+  username = document.getElementById('username').value;
+
+  if (!username) {
+    alert("Please enter in a display name!");
+    return;
+  }
+  if (!gameID) {
+    alert("Please enter in a game ID!");
+    return;
+  }
 
   // Create connection to destination peer specified in the input field
   conn = peer.connect(gameID);
 
   // Runs function after successful connection to peer
   conn.on('open', function () {
-    console.log("Connected to: " + conn.peer);
+    const msg = "Connected to: " + conn.peer;
+    console.log(msg);
+    sendLocalChat(msg);
   });
 };
 
@@ -56,6 +70,16 @@ function join() {
  */
 function host() {
   const gameID = document.getElementById('game-id').value;
+  username = document.getElementById('username').value;
+
+  if (!username) {
+    alert("Please enter in a display name!");
+    return;
+  }
+  if (!gameID) {
+    alert("Please enter in a game ID!");
+    return;
+  }
 
   // Create own peer object with connection to shared PeerJS server
   peer = new Peer(gameID, {
@@ -65,20 +89,99 @@ function host() {
   // Runs when the peer has been created
   peer.on('open', function (id) {
     console.log('ID: ' + peer.id);
-    console.log("Awaiting connection...");
+    sendLocalChat("Room created with ID '" + gameID + "'.");
   });
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
     conn = c;
-    console.log("Connected to: " + conn.peer);
+    const msg = "Connected to: " + conn.peer;
+    console.log(msg);
+    sendLocalChat(msg);
 
     conn.on('data', function (data) {
-      console.log("Data recieved");
-      console.log(data);
+      console.log("Data recieved: ", data);
+      sendLocalChat(data);
     });
   });
 };
+
+/*
+ * getTimeStr()
+ * 
+ * Returns a string in the format HH:MM:SS
+ */
+function getTimeStr() {
+  // Get the date and time
+  var now = new Date();
+  var h = now.getHours();
+  var m = addZero(now.getMinutes());
+  var s = addZero(now.getSeconds());
+
+  if (h > 12)
+      h -= 12;
+  else if (h === 0)
+      h = 12;
+
+  function addZero(t) {
+      if (t < 10)
+          t = "0" + t;
+      return t;
+  };
+
+  return h + ":" + m + ":" + s
+}
+
+/*
+ * enterChat()
+ *
+ *
+ */
+function enterChat() {
+  const msg = document.getElementById('game-id').value;
+  sendOnlineChat(msg);
+}
+
+/*
+ * sendOnlineChat(msg)
+ *
+ *
+ */
+function sendOnlineChat(msg) {
+  if (!conn) {
+    alert("You need to be in a room with other people!");
+    return;
+  }
+
+  conn.send(msg);
+  console.log("Sent message: ", msg);
+  addChatBox("<span class=\"selfMsg\">" + username + ": </span>" + msg);
+}
+
+/*
+ * sendLocalChat(msg)
+ *
+ *
+ */
+function sendLocalChat(msg) {
+  console.log("Local message: ", msg);
+  addChatBox(msg);
+}
+
+/*
+ * addChatBox(msg)
+ *
+ * Adds a given string to the 'message' HTML object
+ * (which represents the chat box).
+ */
+function addChatBox(msg) {
+  if (!message) {
+    message = document.getElementById("message");
+  }
+
+  const time = getTimeStr();
+  message.innerHTML = "<br><span class=\"msg-time\">" + time + "</span>  -  " + msg + message.innerHTML;
+}
 
 // Main React app render
 function App() {
@@ -86,7 +189,7 @@ function App() {
     <div className="App">
       <span>
         Display Name:
-        <input type="text" id="display-name"></input>
+        <input type="text" id="username"></input>
       </span>
       <br/>
       <span>
@@ -98,12 +201,19 @@ function App() {
         <button onClick={join}>Join</button>
         <button onClick={host}>Create Game</button>
       </span>
-      <h1>Game</h1>
+      <h1>Chat</h1>
+      <span>
+        <input type="text" id="chat"></input>
+        <button onClick={enterChat}>Send</button>
+      </span>
+      <span>
+        <div id="message"><span></span></div>
+      </span>
     </div>
   );
 }
 
-// Main code
+// Main (starting) code
 create();
 
 export default App;
