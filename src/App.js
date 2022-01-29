@@ -12,6 +12,7 @@ var peer = null;
 var conn = null;
 var message = null;
 var username = null;
+var gameID = null;
 
 /*
  * create()
@@ -71,7 +72,7 @@ function join() {
  * peer object.
  */
 function host() {
-  const gameID = document.getElementById('game-id').value;
+  gameID = document.getElementById('game-id').value;
   username = document.getElementById('username').value;
 
   if (!username) {
@@ -118,6 +119,10 @@ function readData(data) {
   const char = data.charAt(0);
   switch (char) {
     case '+':
+      // Reply if this is the host
+      if (gameID && gameID == peer.id) {
+        conn.send("+" + username);
+      }
       sendLocalChat("Connected to: " + data.slice(1));
       break;
     default: 
