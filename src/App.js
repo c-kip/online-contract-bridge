@@ -3,7 +3,6 @@
  *
  * Main React page, along with basic peer-to-peer connectivity.
  */
-import logo from './logo.svg';
 import './App.css';
 import Peer from 'peerjs';
 

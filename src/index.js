@@ -2,11 +2,17 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
+import Header from './components/Header';
+import Footer from './components/Footer';
 import reportWebVitals from './reportWebVitals';
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <div className="ApplicationDiv">
+      <Header title="Queen's University Contract Bridge Club"/>
+      <App />
+      <Footer />
+    </div>
   </React.StrictMode>,
   document.getElementById('root')
 );
