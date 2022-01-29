@@ -57,6 +57,9 @@ function join() {
     const msg = "Connected to: " + conn.peer;
     console.log(msg);
     sendLocalChat(msg);
+    
+    // Runs when data is received
+    conn.on('data', (data) => readData(data));
   });
 };
 
@@ -99,12 +102,24 @@ function host() {
     console.log(msg);
     sendLocalChat(msg);
 
-    conn.on('data', function (data) {
-      console.log("Data recieved: ", data);
-      sendLocalChat(data);
-    });
+    // Runs when data is received
+    conn.on('data', (data) => readData(data));
   });
 };
+
+/*
+ * readData()
+ * 
+ * Reads the sent data and interprets it as
+ * necessary.
+ */
+function readData(data) {
+  console.log("Data recieved: ", data);
+  const commaIndex = data.indexOf(",");
+  var otherUsername = data.slice(0, commaIndex);
+  var message = data.slice(commaIndex + 1);
+  sendLocalChat("<span class=\"selfMsg\">" + otherUsername + ": </span>" + message);
+}
 
 /*
  * getTimeStr()
@@ -153,8 +168,8 @@ function sendOnlineChat(msg) {
     return;
   }
 
-  conn.send(msg);
-  console.log("Sent message: ", msg);
+  conn.send(username + "," + msg);
+  console.log("Sent message: " + username + "," + msg);
   addChatBox("<span class=\"selfMsg\">" + username + ": </span>" + msg);
 }
 
