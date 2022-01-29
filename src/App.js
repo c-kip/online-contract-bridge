@@ -123,6 +123,7 @@ function readData(data) {
       if (gameID && gameID == peer.id) {
         conn.send("+" + username);
       }
+      
       sendLocalChat("Connected to: " + data.slice(1));
       break;
     default: 
@@ -164,7 +165,9 @@ function getTimeStr() {
 /*
  * enterChat()
  *
- *
+ * Records the text in the 'chat' HTML element and sends
+ * it to the sendOnlineChat() function (recording the chat
+ * locally and sending to all other users in the room).
  */
 function enterChat() {
   const msg = document.getElementById('chat').value;
@@ -174,7 +177,8 @@ function enterChat() {
 /*
  * sendOnlineChat(msg)
  *
- *
+ * Sends the given text to all users in the connection, and
+ * adds a record of it in the chat box.
  */
 function sendOnlineChat(msg) {
   if (!conn) {
@@ -190,7 +194,7 @@ function sendOnlineChat(msg) {
 /*
  * sendLocalChat(msg)
  *
- *
+ * Records a local copy of the msg to the chat box.
  */
 function sendLocalChat(msg) {
   console.log("Local message: ", msg);
