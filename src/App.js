@@ -163,6 +163,7 @@ function readData(connection, data) {
   switch (data.type) {
     case 'hostconnection':
       console.log("Host connection received.");
+      sendLocalChat("Connected to: " + data.username);
       for (var user in data.allUsers) {
         if (user !== username) {
           sendLocalChat("Connected to: " + user);
