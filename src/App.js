@@ -9,7 +9,9 @@ import Peer from 'peerjs';
 // Global variables
 var peer = null;
 var conn = null;
-var message = null;
+var hostCons = [];
+var hostConsUsers = [];
+var messageHTML = null;
 var username = null;
 var gameID = null;
 
@@ -56,10 +58,12 @@ function join() {
   // Runs function after successful connection to peer
   conn.on('open', function () {
     console.log("Connected to: " + conn.peer);
-    sendData('connection');
-    
+
     // Runs when data is received
-    conn.on('data', (data) => readData(data));
+    conn.on('data', (data) => readData(conn, data));
+
+    // Send an official connection message
+    sendData(conn, 'connection');
   });
 };
 
@@ -98,12 +102,12 @@ function host() {
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
-    conn = c;
-    console.log("Connected to: " + conn.peer);
+    console.log("Connected to: " + c.peer);
+    hostCons.push(c);
     //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
-    conn.on('data', (data) => readData(data));
+    c.on('data', (data) => readData(c, data));
   });
 };
 
@@ -113,28 +117,37 @@ function host() {
  * Prepares and sends the given data to all
  * users in the connection.
  */
-function sendData(type, txt) {
-  if (!conn) {
+function sendData(connection, type, txt, otherUser) {
+  if (!connection) {
     console.log("Failed to send data to non-existent connection.");
     return;
   }
 
   // Create the JSON object to send
   var data = {
-    username: username,
     type: type
+  }
+  if (otherUser) {
+    data.username = otherUser;
+  } else {
+    data.username = username;
   }
 
   // Modify it depending on what kind of data we want to send
   switch(type) {
+    case 'hostconnection':
+      data.allUsers = hostConsUsers.slice();
+      break;
     case 'connection':
       break;
     case 'msg':
-    default:
       data.msg = txt;
       break;
+    default:
+      console.log("Unrecognized response attempted to send, returning.");
+      return;
   }
-  conn.send(data);
+  connection.send(data);
 }
 
 /*
@@ -143,25 +156,74 @@ function sendData(type, txt) {
  * Reads the sent data and interprets it as
  * necessary.
  */
-function readData(data) {
+function readData(connection, data) {
   console.log("Data recieved: ", data);
 
   // Check what type of data was sent
-  const type = data.type;
-  switch (type) {
-    case 'connection':
-      // Reply if this is the host
-      if (gameID && gameID == peer.id) {
-        sendData('connection');
-      }
-      
+  switch (data.type) {
+    case 'hostconnection':
+      console.log("Host connection received.");
       sendLocalChat("Connected to: " + data.username);
+      for (var i = 0; i < data.allUsers.length; i++) {
+        if (data.allUsers[i] !== username) {
+          sendLocalChat("Connected to: " + data.allUsers[i]);
+        }
+      }
+      break;
+    case 'connection':
+      console.log("Connection received.");
+      hostConsUsers.push(data.username);
+      sendLocalChat("Connected to: " + data.username);
+      break;
+    case 'msg':
+      //Assume a chat message
+      console.log("Message or otherwise received.");
+      sendLocalChat("<span class=\"selfMsg\">" + data.username + ": </span>" + data.msg);
+      break;
+    default: 
+      console.log("Unrecognized response attempted to send, returning.");
+      return;
+  }
+
+  // Distribute if this is the host
+  if (gameID && gameID === peer.id) {
+    distributeData(connection, data);
+  }
+}
+
+/*
+ * distributeData()
+ *
+ * Host sends a message, connection, other other data to all
+ * connected peers that require it.
+ */
+function distributeData(source, data) {
+  var response = null;
+  console.log("Distributing info from host.");
+
+  switch (data.type) {
+    case 'connection':
+      response = 'hostconnection';
       break;
     case 'msg':
     default: 
       //Assume a chat message
-      sendLocalChat("<span class=\"selfMsg\">" + data.username + ": </span>" + data.msg);
       break;
+  }
+
+  // Loop all connections and distribute the message
+  for (var i = 0; i < hostCons.length; i++) {
+    if (source && hostCons[i].peer === source.peer) { 
+      if (response) {
+        // Send response to the source peer
+        console.log("Replying to source.");
+        sendData(source, response);
+      }
+    } else {
+      // Tell all other peers about the message
+      console.log("Relaying msg to: " + hostCons[i].peer);
+      sendData(hostCons[i], data.type, data.msg, data.username);
+    }
   }
 }
 
@@ -210,13 +272,32 @@ function enterChat() {
  * adds a record of it in the chat box.
  */
 function sendOnlineChat(msg) {
-  if (!conn) {
-    alert("You need to be in a room with other people!");
-    return;
+  var msgData = {
+    type: 'msg',
+    msg: msg
   }
 
-  sendData('msg', msg);
-  console.log("Sent message: " + username + "," + msg);
+  if (gameID && gameID === peer.id) {
+    // Device is the host, so send data to all peers. First check they have a connection
+    if (!hostCons[0]) {
+      alert("You need to be in a room with other people!");
+      return;
+    }
+
+    distributeData(null, msgData);
+    console.log("Sent message to all peers: " + username + "," + msg);
+
+  } else {
+    // Device is a peer, first check they have a connection
+    if (!conn) {
+      alert("You need to be in a room with other people!");
+      return;
+    }
+
+    // Send the data
+    sendData(conn, 'msg', msg);
+    console.log("Sent message: " + username + "," + msg);
+  }
   addChatBox("<span class=\"selfMsg\">" + username + ": </span>" + msg);
 }
 
@@ -237,12 +318,12 @@ function sendLocalChat(msg) {
  * (which represents the chat box).
  */
 function addChatBox(msg) {
-  if (!message) {
-    message = document.getElementById("message");
+  if (!messageHTML) {
+    messageHTML = document.getElementById("message");
   }
 
   const time = getTimeStr();
-  message.innerHTML = "<br><span class=\"msgTime\">" + time + "</span>  -  " + msg + message.innerHTML;
+  messageHTML.innerHTML = "<br><span class=\"msgTime\">" + time + "</span>  -  " + msg + messageHTML.innerHTML;
 }
 
 // Main React app render
