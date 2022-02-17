@@ -197,7 +197,7 @@ function readData(connection, data) {
  * Host sends a message, connection, other other data to all
  * connected peers that require it.
  */
-function distributeData(source, data, username) {
+function distributeData(source, data) {
   var response = null;
   console.log("Distributing info from host.");
 
@@ -222,7 +222,7 @@ function distributeData(source, data, username) {
     } else {
       // Tell all other peers about the message
       console.log("Relaying msg to: " + hostCons[i].peer);
-      sendData(hostCons[i], data.type, data.msg, username);
+      sendData(hostCons[i], data.type, data.msg, data.username);
     }
   }
 }
