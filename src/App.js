@@ -136,7 +136,7 @@ function sendData(connection, type, txt, otherUser) {
   // Modify it depending on what kind of data we want to send
   switch(type) {
     case 'hostconnection':
-      data.allUsers = hostConsUsers;
+      data.allUsers = hostConsUsers.slice();
       break;
     case 'connection':
       break;
@@ -164,10 +164,9 @@ function readData(connection, data) {
     case 'hostconnection':
       console.log("Host connection received.");
       sendLocalChat("Connected to: " + data.username);
-      for (var user in data.allUsers) {
-        console.log(user);
-        if (user !== username) {
-          sendLocalChat("Connected to: " + user);
+      for (var i = 0; i < data.allUsers.length; i++) {
+        if (data.allUsers[i] !== username) {
+          sendLocalChat("Connected to: " + data.allUsers[i]);
         }
       }
       break;
