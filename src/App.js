@@ -102,12 +102,12 @@ function host() {
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
+    console.log("Connected to: " + c.peer);
     hostCons.push(c);
     //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
     c.on('data', (data) => readData(c, data));
-    console.log("Connected to: " + c.peer);
   });
 };
 
@@ -117,7 +117,7 @@ function host() {
  * Prepares and sends the given data to all
  * users in the connection.
  */
-function sendData(connection, type, txt) {
+function sendData(connection, type, txt, otherUser) {
   if (!connection) {
     console.log("Failed to send data to non-existent connection.");
     return;
@@ -125,8 +125,12 @@ function sendData(connection, type, txt) {
 
   // Create the JSON object to send
   var data = {
-    username: username,
     type: type
+  }
+  if (otherUser) {
+    data.username = otherUser;
+  } else {
+    data.username = username;
   }
 
   // Modify it depending on what kind of data we want to send
@@ -137,9 +141,11 @@ function sendData(connection, type, txt) {
     case 'connection':
       break;
     case 'msg':
-    default:
       data.msg = txt;
       break;
+    default:
+      console.log("Unrecognized response attempted to send, returning.");
+      return;
   }
   connection.send(data);
 }
@@ -153,17 +159,12 @@ function sendData(connection, type, txt) {
 function readData(connection, data) {
   console.log("Data recieved: ", data);
 
-  // Distribute if this is the host
-  if (gameID && gameID === peer.id) {
-    distributeData(connection, data);
-  }
-
   // Check what type of data was sent
   switch (data.type) {
     case 'hostconnection':
       console.log("Host connection received.");
       for (var user in data.allUsers) {
-        if (user != username) {
+        if (user !== username) {
           sendLocalChat("Connected to: " + user);
         }
       }
@@ -174,11 +175,18 @@ function readData(connection, data) {
       sendLocalChat("Connected to: " + data.username);
       break;
     case 'msg':
-    default: 
       //Assume a chat message
       console.log("Message or otherwise received.");
       sendLocalChat("<span class=\"selfMsg\">" + data.username + ": </span>" + data.msg);
       break;
+    default: 
+      console.log("Unrecognized response attempted to send, returning.");
+      return;
+  }
+
+  // Distribute if this is the host
+  if (gameID && gameID === peer.id) {
+    distributeData(connection, data);
   }
 }
 
@@ -188,7 +196,7 @@ function readData(connection, data) {
  * Host sends a message, connection, other other data to all
  * connected peers that require it.
  */
-function distributeData(source, data) {
+function distributeData(source, data, username) {
   var response = null;
   console.log("Distributing info from host.");
 
@@ -205,13 +213,15 @@ function distributeData(source, data) {
   // Loop all connections and distribute the message
   for (var i = 0; i < hostCons.length; i++) {
     if (source && hostCons[i].peer === source.peer) { 
-      // Send response to the source peer
-      console.log("Replying to source if necessary.");
-      sendData(source, response);
+      if (response) {
+        // Send response to the source peer
+        console.log("Replying to source.");
+        sendData(source, response);
+      }
     } else {
       // Tell all other peers about the message
       console.log("Relaying msg to: " + hostCons[i].peer);
-      sendData(hostCons[i], data.type, data.msg);
+      sendData(hostCons[i], data.type, data.msg, username);
     }
   }
 }
