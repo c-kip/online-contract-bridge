@@ -58,10 +58,12 @@ function join() {
   // Runs function after successful connection to peer
   conn.on('open', function () {
     console.log("Connected to: " + conn.peer);
-    sendData(conn, 'connection');
-    
+
     // Runs when data is received
     conn.on('data', (data) => readData(conn, data));
+
+    // Send an official connection message
+    sendData(conn, 'connection');
   });
 };
 
@@ -101,11 +103,11 @@ function host() {
   // Runs when a connection has been established
   peer.on('connection', function (c) {
     hostCons.push(c);
-    console.log("Connected to: " + c.peer);
     //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
     c.on('data', (data) => readData(c, data));
+    console.log("Connected to: " + c.peer);
   });
 };
 
@@ -160,6 +162,11 @@ function readData(connection, data) {
   switch (data.type) {
     case 'hostconnection':
       console.log("Host connection received.");
+      for (var user in data.allUsers) {
+        if (user != username) {
+          sendLocalChat("Connected to: " + user);
+        }
+      }
       break;
     case 'connection':
       console.log("Connection received.");
@@ -183,6 +190,7 @@ function readData(connection, data) {
  */
 function distributeData(source, data) {
   var response = null;
+  console.log("Distributing info from host.");
 
   switch (data.type) {
     case 'connection':
@@ -198,6 +206,7 @@ function distributeData(source, data) {
   for (var i = 0; i < hostCons.length; i++) {
     if (source && hostCons[i].peer === source.peer) { 
       // Send response to the source peer
+      console.log("Replying to source if necessary.");
       sendData(source, response);
     } else {
       // Tell all other peers about the message
