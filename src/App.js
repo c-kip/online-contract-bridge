@@ -59,7 +59,7 @@ function join() {
     sendData('connection');
     
     // Runs when data is received
-    conn.on('data', (data) => readData(data));
+    conn.on('data', (data) => readData(conn, data));
   });
 };
 
@@ -98,12 +98,21 @@ function host() {
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
+<<<<<<< HEAD
     conn = c;
     console.log("Connected to: " + conn.peer);
     //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
     conn.on('data', (data) => readData(data));
+=======
+    hostCons.push(c);
+    console.log("Connected to: " + c.peer);
+    //sendData('connection') the receiver doesn't get this, could be a timing issue
+
+    // Runs when data is received
+    c.on('data', (data) => readData(c, data));
+>>>>>>> 8b425114a79351127ac03530459beff9fa6ee2cc
   });
 };
 
