@@ -10,6 +10,7 @@ import Peer from 'peerjs';
 var peer = null;
 var conn = null;
 var hostCons = [];
+var hostConsUsers = [];
 var messageHTML = null;
 var username = null;
 var gameID = null;
@@ -129,7 +130,7 @@ function sendData(connection, type, txt) {
   // Modify it depending on what kind of data we want to send
   switch(type) {
     case 'hostconnection':
-      data.allUsers = hostCons.usernames;
+      data.allUsers = hostConsUsers;
       break;
     case 'connection':
       break;
@@ -152,17 +153,23 @@ function readData(connection, data) {
 
   // Distribute if this is the host
   if (gameID && gameID === peer.id) {
-    distributeData(connection, data)
+    distributeData(connection, data);
   }
 
   // Check what type of data was sent
   switch (data.type) {
+    case 'hostconnection':
+      console.log("Host connection received.");
+      break;
     case 'connection':
+      console.log("Connection received.");
+      hostConsUsers.push(data.username);
       sendLocalChat("Connected to: " + data.username);
       break;
     case 'msg':
     default: 
       //Assume a chat message
+      console.log("Message or otherwise received.");
       sendLocalChat("<span class=\"selfMsg\">" + data.username + ": </span>" + data.msg);
       break;
   }
@@ -188,13 +195,14 @@ function distributeData(source, data) {
   }
 
   // Loop all connections and distribute the message
-  for (var connection in hostCons) {
-    if (source && connection.peer === source.peer) { 
+  for (var i = 0; i < hostCons.length; i++) {
+    if (source && hostCons[i].peer === source.peer) { 
       // Send response to the source peer
-      sendData(connection, response);
+      sendData(source, response);
     } else {
       // Tell all other peers about the message
-      sendData(connection, data.type, data.msg);
+      console.log("Relaying msg to: " + hostCons[i].peer);
+      sendData(hostCons[i], data.type, data.msg);
     }
   }
 }
@@ -267,7 +275,7 @@ function sendOnlineChat(msg) {
     }
 
     // Send the data
-    sendData(conn, msgData);
+    sendData(conn, 'msg', msg);
     console.log("Sent message: " + username + "," + msg);
   }
   addChatBox("<span class=\"selfMsg\">" + username + ": </span>" + msg);
