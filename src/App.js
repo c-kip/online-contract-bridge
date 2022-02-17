@@ -60,7 +60,7 @@ function join() {
     sendData(conn, 'connection');
     
     // Runs when data is received
-    conn.on('data', (data) => readData(data));
+    conn.on('data', (data) => readData(conn, data));
   });
 };
 
@@ -99,12 +99,12 @@ function host() {
 
   // Runs when a connection has been established
   peer.on('connection', function (c) {
-    hostCons.append(c);
+    hostCons.push(c);
     console.log("Connected to: " + c.peer);
     //sendData('connection') the receiver doesn't get this, could be a timing issue
 
     // Runs when data is received
-    c.on('data', (data) => readData(data));
+    c.on('data', (data) => readData(c, data));
   });
 };
 
