@@ -5,15 +5,43 @@
  */
 import './App.css';
 import Peer from 'peerjs';
+import { join } from './Peer';
+import { getHostCons, getHostConsUsers, host, distributeData } from './Host';
 
 // Global variables
 var peer = null;
 var conn = null;
-var hostCons = [];
-var hostConsUsers = [];
 var messageHTML = null;
 var username = null;
 var gameID = null;
+
+/*
+ * Getter and setter methods
+ */
+
+function updateGameID() {
+  gameID = document.getElementById('game-id').value;
+}
+
+function getGameID() {
+  return gameID;
+}
+
+function updateUsername() {
+  username = document.getElementById('username').value;
+}
+
+function getUsername() {
+  return username;
+}
+
+function getPeer() {
+  return peer;
+}
+
+function setPeer(newPeer) {
+  peer = newPeer;
+}
 
 /*
  * create()
@@ -31,85 +59,6 @@ function create() {
     console.log('ID: ' + peer.id);
   });
 }
-
-/*
- * join()
- * 
- * Attempt to connect to the gameID given in the text box using
- * peer-to-peer connection.
- */
-function join() {
-  const gameID = document.getElementById('game-id').value;
-  username = document.getElementById('username').value;
-
-  // Check for non-null inputs
-  if (!username) {
-    alert("Please enter in a display name!");
-    return;
-  }
-  if (!gameID) {
-    alert("Please enter in a game ID!");
-    return;
-  }
-
-  // Create connection to destination peer specified in the input field
-  conn = peer.connect(gameID);
-
-  // Runs function after successful connection to peer
-  conn.on('open', function () {
-    console.log("Connected to: " + conn.peer);
-
-    // Runs when data is received
-    conn.on('data', (data) => readData(conn, data));
-
-    // Send an official connection message
-    sendData(conn, 'connection');
-  });
-};
-
-/* 
- * host()
- * 
- * Create a connection to start listening on (a "room").
- * This creates the Peer object for our end of the connection.
- * Sets up callbacks that handle any events related to our
- * peer object.
- */
-function host() {
-  gameID = document.getElementById('game-id').value;
-  username = document.getElementById('username').value;
-
-  // Check for non-null inputs
-  if (!username) {
-    alert("Please enter in a display name!");
-    return;
-  }
-  if (!gameID) {
-    alert("Please enter in a game ID!");
-    return;
-  }
-
-  // Create own peer object with connection to shared PeerJS server
-  peer = new Peer(gameID, {
-    debug: 2
-  });
-
-  // Runs when the peer has been created
-  peer.on('open', function (id) {
-    console.log('ID: ' + peer.id);
-    sendLocalChat("Room created with ID '<b>" + gameID + "</b>'.");
-  });
-
-  // Runs when a connection has been established
-  peer.on('connection', function (c) {
-    console.log("Connected to: " + c.peer);
-    hostCons.push(c);
-    //sendData('connection') the receiver doesn't get this, could be a timing issue
-
-    // Runs when data is received
-    c.on('data', (data) => readData(c, data));
-  });
-};
 
 /*
  * sendData()
@@ -136,7 +85,7 @@ function sendData(connection, type, txt, otherUser) {
   // Modify it depending on what kind of data we want to send
   switch(type) {
     case 'hostconnection':
-      data.allUsers = hostConsUsers.slice();
+      data.allUsers = getHostConsUsers().slice();
       break;
     case 'connection':
       break;
@@ -172,7 +121,7 @@ function readData(connection, data) {
       break;
     case 'connection':
       console.log("Connection received.");
-      hostConsUsers.push(data.username);
+      addHostConsUsers(data.username);
       sendLocalChat("Connected to: " + data.username);
       break;
     case 'msg':
@@ -189,68 +138,6 @@ function readData(connection, data) {
   if (gameID && gameID === peer.id) {
     distributeData(connection, data);
   }
-}
-
-/*
- * distributeData()
- *
- * Host sends a message, connection, other other data to all
- * connected peers that require it.
- */
-function distributeData(source, data) {
-  var response = null;
-  console.log("Distributing info from host.");
-
-  switch (data.type) {
-    case 'connection':
-      response = 'hostconnection';
-      break;
-    case 'msg':
-    default: 
-      //Assume a chat message
-      break;
-  }
-
-  // Loop all connections and distribute the message
-  for (var i = 0; i < hostCons.length; i++) {
-    if (source && hostCons[i].peer === source.peer) { 
-      if (response) {
-        // Send response to the source peer
-        console.log("Replying to source.");
-        sendData(source, response);
-      }
-    } else {
-      // Tell all other peers about the message
-      console.log("Relaying msg to: " + hostCons[i].peer);
-      sendData(hostCons[i], data.type, data.msg, data.username);
-    }
-  }
-}
-
-/*
- * getTimeStr()
- * 
- * Returns a string in the format HH:MM:SS
- */
-function getTimeStr() {
-  // Get the date and time
-  var now = new Date();
-  var h = now.getHours();
-  var m = addZero(now.getMinutes());
-  var s = addZero(now.getSeconds());
-
-  if (h > 12)
-      h -= 12;
-  else if (h === 0)
-      h = 12;
-
-  function addZero(t) {
-      if (t < 10)
-          t = "0" + t;
-      return t;
-  };
-
-  return h + ":" + m + ":" + s
 }
 
 /*
@@ -279,7 +166,7 @@ function sendOnlineChat(msg) {
 
   if (gameID && gameID === peer.id) {
     // Device is the host, so send data to all peers. First check they have a connection
-    if (!hostCons[0]) {
+    if (!getHostCons()[0]) {
       alert("You need to be in a room with other people!");
       return;
     }
@@ -326,6 +213,32 @@ function addChatBox(msg) {
   messageHTML.innerHTML = "<br><span class=\"msgTime\">" + time + "</span>  -  " + msg + messageHTML.innerHTML;
 }
 
+/*
+ * getTimeStr()
+ * 
+ * Returns a string in the format HH:MM:SS
+ */
+function getTimeStr() {
+  // Get the date and time
+  var now = new Date();
+  var h = now.getHours();
+  var m = addZero(now.getMinutes());
+  var s = addZero(now.getSeconds());
+
+  if (h > 12)
+      h -= 12;
+  else if (h === 0)
+      h = 12;
+
+  function addZero(t) {
+      if (t < 10)
+          t = "0" + t;
+      return t;
+  };
+
+  return h + ":" + m + ":" + s
+}
+
 // Main React app render
 function App() {
   return (
@@ -370,3 +283,4 @@ function App() {
 create();
 
 export default App;
+export { updateGameID, updateUsername, getGameID, getUsername, getPeer, setPeer, readData, sendData };
