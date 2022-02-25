@@ -6,7 +6,7 @@
 import './App.css';
 import Peer from 'peerjs';
 import { join } from './Peer';
-import { getHostCons, getHostConsUsers, host, distributeData } from './Host';
+import { getHostCons, getHostConsUsers, addHostConsUsers, host, distributeData } from './Host';
 
 // Global variables
 var peer = null;
@@ -283,4 +283,4 @@ function App() {
 create();
 
 export default App;
-export { updateGameID, updateUsername, getGameID, getUsername, getPeer, setPeer, readData, sendData };
+export { updateGameID, updateUsername, getGameID, getUsername, getPeer, setPeer, readData, sendData, sendLocalChat };

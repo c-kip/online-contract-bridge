@@ -16,7 +16,7 @@ var conn = null;
 function join() {
     updateGameID();
     updateUsername();
-    gameID = getGameID();
+    var gameID = getGameID();
   
     // Check for non-null inputs
     if (!getUsername()) {

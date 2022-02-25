@@ -4,7 +4,7 @@
  * All host specific functionality (host creation and message distribution).
  */
 import Peer from 'peerjs';
-import { updateGameID, getGameID, updateUsername, getUsername, setPeer, readData, sendData, setPeer } from './App';
+import { updateGameID, getGameID, updateUsername, getUsername, setPeer, readData, sendData, sendLocalChat } from './App';
 
 var hostCons = [];
 var hostConsUsers = [];
@@ -36,7 +36,7 @@ function addHostConsUsers(newUser) {
 function host() {
     updateGameID();
     updateUsername();
-    gameID = getGameID();
+    var gameID = getGameID();
   
     // Check for non-null inputs
     if (!getUsername()) {
@@ -49,7 +49,7 @@ function host() {
     }
   
     // Create own peer object with connection to shared PeerJS server
-    peer = new Peer(gameID, {
+    var peer = new Peer(gameID, {
       debug: 2
     });
     setPeer(peer);
